@@ -207,14 +207,14 @@ STDAtmo::STDAtmo(QWidget *parent)
     // write an information section
     ui -> infoBrowser -> setOpenExternalLinks(true);
     QString content = R"(
-    <h1>STDAtmo++</h1>
+    <h1>STDAtmo</h1>
 
     <h2>Description</h2>
-    <p>The STDAtmo++ computes standard atmosphere properties based on the the 1976 model.
+    <p>The STDAtmo computes standard atmosphere properties based on the the 1976 model.
        All typical air properties with ISA deviations can be computed up to an altitude of 86 kilometers.</p>
 
     <h2>Capabilities</h2>
-    <p>STADAtmo++ has two features:
+    <p>STDAtmo has two features:
     <ul>
     <li> Calculations of standard atmosphere properties at a given altitude and temperature deviations in SI and US units.
     <li> Plotting of standard atmosphere properties in a user-defined range and prescribed units.

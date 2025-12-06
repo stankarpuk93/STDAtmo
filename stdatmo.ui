@@ -29,7 +29,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>STDAtmo++</string>
+   <string>STDAtmo</string>
   </property>
   <property name="autoFillBackground">
    <bool>false</bool>
@@ -224,7 +224,7 @@
        </rect>
       </property>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>271</x>
@@ -364,7 +364,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>181</x>
@@ -409,7 +409,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="">
+     <widget class="QWidget" name="layoutWidget">
       <property name="geometry">
        <rect>
         <x>21</x>

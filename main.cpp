@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     a.setWindowIcon(QIcon(":/STDAtmo_logo.png"));
 
     // get the application data
-    QApplication::setApplicationName("STDAtmo++");
+    QApplication::setApplicationName("STDAtmo");
     QApplication::setApplicationVersion("1.0.0");
     QApplication::setOrganizationName("Stanislav Karpuk");
     QApplication::setOrganizationDomain("stankarpuk93@gmail.com");

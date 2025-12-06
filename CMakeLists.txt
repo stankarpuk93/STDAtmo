@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(STDAtmo++ VERSION 1.0.0)
+project(STDAtmo VERSION 1.0.0)
 
 # Auto-find Qt - Add PrintSupport for QCustomPlot
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core Gui PrintSupport)
@@ -10,7 +10,8 @@ if(MINGW)
     add_compile_options(-O1)  # Lower optimization helps
 endif()
 
-# List sources - FIX: Don't include headers in add_executable
+
+
 set(SOURCES
     main.cpp
     stdatmo.cpp
@@ -36,8 +37,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Create executable - HEADERS should NOT be here for Qt projects
-add_executable(STDAtmo
+add_executable(STDAtmo WIN32
     ${SOURCES}
     ${UI_FILES}
     ${HEADERS}
