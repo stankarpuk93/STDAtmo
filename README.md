@@ -8,20 +8,19 @@ A lightweight desktop calculator of 1976 U.S. Standard Atmosphere
 [![Qt](https://img.shields.io/badge/Qt-6.10-green.svg)](https://www.qt.io/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)]()
 
-A lightweight Qt-based calculator for standard atmospheric properties with an US ISA 1976 implementation.
+A lightweight Qt-based calculator for standard atmospheric properties with an 1976 U.S. Standard Atmosphere implementation.
 
 ## Features
 
-- **Complete ISA 1976 Model** - 8 atmospheric layers (0-85 km)
-- **Multi-Unit Support** - SI and US Customary units
+- **US ISA 1976 Model** - 8 atmospheric layers (0-86 km)
+- **Multi-Unit Support** - SI and US units
 - **Temperature Deviation** - Calculate with non-standard conditions
-- **Export Results** - Save to CSV format
-- **Real-Time Calculations** - Instant parameter updates
+- **Plotting** - Plots standard atmosphere properties for a given range
 
 ## Installation
 
 ### For End Users
-Download the latest release for your platform from the [Releases](../../releases) page.
+Download the latest release from the [Releases](../../releases) page.
 
 ### For Developers
 
@@ -37,18 +36,4 @@ Download the latest release for your platform from the [Releases](../../releases
 5. Click the hammer icon **Build** (Ctrl+B)
 6. Click the play button **Run** (Ctrl+R)
 
-## Usage
 
-1. Select unit system (SI or US)
-2. Enter geometric altitude
-3. Set temperature deviation (optional)
-4. Click **Calculate**
-
-### Output Parameters
-- Temperature (K/°C or °R/°F)
-- Pressure (Pa/hPa or psf/psi)
-- Density (kg/m³ or slug/ft³)
-- Speed of Sound (m/s or ft/s)
-- Dynamic Viscosity (Pa·s or lb·s/ft²)
-
-## Project Structure
