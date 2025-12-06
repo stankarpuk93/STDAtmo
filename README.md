@@ -4,9 +4,10 @@ A lightweight desktop calculator of 1976 U.S. Standard Atmosphere
 
 # Standard Atmosphere Calculator
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Qt](https://img.shields.io/badge/Qt-6.10-green.svg)](https://www.qt.io/)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7-lightgrey.svg)]()
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-blue)]()
+[![License](https://img.shields.io/badge/License-MIT-green)]()
+[![C++](https://img.shields.io/badge/C++-17-orange)]()
+[![Qt](https://img.shields.io/badge/Qt-5%2F6-blue)]()
 
 A lightweight Qt-based calculator for standard atmospheric properties with an 1976 U.S. Standard Atmosphere implementation.
 
