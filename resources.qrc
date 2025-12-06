@@ -1,0 +1,7 @@
+<!-- resources.qrc -->
+<RCC>
+    <qresource prefix="/">
+        <file>STDAtmo_logo.png</file>
+
+    </qresource>
+</RCC>
