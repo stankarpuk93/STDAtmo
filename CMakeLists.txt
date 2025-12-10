@@ -15,12 +15,14 @@ endif()
 set(SOURCES
     main.cpp
     stdatmo.cpp
+    standardAtmosphere.cpp
     libs/qcustomplot/qcustomplot.cpp  # Direct path, no variable
 )
 
 set(HEADERS
     stdatmo.h
     units.h
+    standardAtmosphere.h
     libs/qcustomplot/qcustomplot.h
 )
 

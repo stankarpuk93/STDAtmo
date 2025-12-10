@@ -3,6 +3,9 @@
 
 #include <QMainWindow>
 #include <QVector>
+#include <QMainWindow>
+#include <QComboBox>
+#include <QLineEdit>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -33,7 +36,7 @@ private slots:
 
     void on_ViscosityCombo_currentIndexChanged();
 
-    void output_results();
+    void output_STDAresults();
 
     void on_actionExit_triggered();
 
@@ -51,11 +54,41 @@ private slots:
 
     void on_GravityCombo_currentIndexChanged();
 
+    void on_Reset_Yp_clicked();
+
+    void on_AltUnits_Yp_2_currentIndexChanged();
+
+    void on_Compute_Yp_clicked();
+
+    void convert_input_values_Ypp(double &Uinf, double &rhoinf, double &muinf, double &Lref);
+
+    void on_Reset_SP_clicked();
+
+    void on_Compute_SP_clicked();
+
+    void convert_airspeed(QComboBox* comboBox, QLineEdit* outputEdit, double airspeed);
+
+    double convert_airspeed_Input(QComboBox* comboBox, double airspeed);
+
+    void on_CASradioButton_clicked();
+
+    void on_MachradioButton_clicked();
+
+    void on_EASradioButton_clicked();
+
+    void on_TASradioButton_clicked();
+
+    void on_TASCombo_currentIndexChanged();
+
+    void on_EASCombo_currentIndexChanged();
+
+    void on_CASCombo_currentIndexChanged();
+
 private:
     Ui::STDAtmo *ui;
 
     // Initialize values to be computed
-    double p, T, ro, mu, a, Hgp, g;
+    double p, T, ro, mu, a, Hgp, g, ds, VTAS, VCAS, VEAS, Mach;
     double H = 0, dISA = 0;
     bool computed = false;
     double hbegin, hend, dh;

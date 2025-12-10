@@ -3,61 +3,28 @@
 #include <QMessageBox>
 #include <cstdlib>
 #include <algorithm>
+#include <array>
 
 #include "stdatmo.h"
 #include "ui_stdatmo.h"
 #include "units.h"
+#include "standardAtmosphere.h"
 
-// Define a range of constants for
-// standard atmosphere calculations
-const double Href[8] = {0, 11000, 20000, 32000, 47000, 51000, 71000, 84852}; // geopotential altitude, m
-const double Kref[8] = {-0.0065, 0, 0.001, 0.0028, 0, -0.0028, -0.002, -0.002};
-const double Tiso[8] = {288.15, 216.66, 216.66, 228.65, 270.65, 270.65, 214.65, 187.65};
-const double piso[8] = {101325, 22632, 5474, 868.1, 110.9, 66.94, 3.956, 0.373};
-const double g0      = 9.807;
-const double R       = 287.04;
-const double mu0     = 17.16E-6;
-const double S       = 110.6;
-const double T0      = 273.15;
-const double r0      = 6356.766;
-const double gamma   = 1.4;
-const double Heps    = 2;       // altitude tolerance useful when units are converted
+
+// Define necessary constants
+const double Heps0  = 2.0;
 
 
 
+bool isDouble(const QString& str) {
 
-void compute_speed_of_sound_and_viscosity(double &a, double &mu, double T) {
+    // the function checks if the inputs is a number
 
-    // computes speed of sound and dynamic viscosity
-    a  = sqrt(gamma * R * T);
-    mu = mu0 * pow(T/T0,1.5)*(T0+S)/(T+S);
+    bool ok;
+    str.toDouble(&ok);
+    return ok;
 }
 
-double compute_acceleration_of_gravity(double Hgeo){
-
-    // computes acceleration of gravity wrt altitude
-    double g1 = g0 * pow(r0/(r0 + Hgeo / 1000), 2);
-
-    return g1;
-}
-
-
-double compute_geopotential_altitude(double Hgeo){
-
-    // computes a geopotential altitude for a given geometric altitude
-    double Hgp = (r0* Hgeo)/(r0 + Hgeo / 1000);
-
-    return Hgp;
-}
-
-double compute_geometric_altitude(double Hgp){
-
-    // computes a geometric altitude for a given geopotential altitude
-    double Hgeo = (Hgp * r0) / (r0 - Hgp/1000.0);;
-
-    return Hgeo;
-
-}
 
 void append_selected_unit_value(double H, double &g, double &p, double &T, double &rho, double &mu,
                                 double &a, QVector<QPair<double, double>> &atmoData,
@@ -146,48 +113,6 @@ void append_selected_unit_value(double H, double &g, double &p, double &T, doubl
 }
 
 
-void compute_standard_atmosphere(double H, double dISA, double &g, double &p, double &T, double &rho, double &mu, double &a)
-{
-
-    // define all necessary constants
-    double rho_iso;
-    int Htest_ind = 1;
-
-    // find the index of a required altitude
-    while (H > Href[Htest_ind])
-    {
-        Htest_ind += 1;
-    }
-    Htest_ind -= 1;
-
-    double K  = Kref[Htest_ind];
-    double H1 = Href[Htest_ind];
-    double T1 = Tiso[Htest_ind];
-
-    if (K == 0)
-    {
-        // isothermal region
-        double alpha = exp(-g0*(H - H1) / R / T1);
-        T   = T1 + dISA;
-        p   = piso[Htest_ind] * alpha;
-        rho_iso = piso[Htest_ind] / R / T;
-        rho = rho_iso * alpha;
-
-    }
-    else
-    {
-        // gradient region
-        double alpha = -g0 / R / K;
-        double T_noISA = T1 + K * (H - H1);
-        T = T_noISA + dISA;
-        p = piso[Htest_ind] * pow(T_noISA / T1, alpha);
-        rho = p / R / T;
-    }
-
-    compute_speed_of_sound_and_viscosity(a, mu, T);
-    g = compute_acceleration_of_gravity(H);
-}
-
 
 STDAtmo::STDAtmo(QWidget *parent)
     : QMainWindow(parent)
@@ -202,6 +127,15 @@ STDAtmo::STDAtmo(QWidget *parent)
     ui->PlottingWidget->xAxis->setRange(0,288);
     ui->PlottingWidget->yAxis->setRange(0,86000);
     ui->PlottingWidget->replot();
+
+
+    // write infor for the Y+ calculator
+    QString footnote = R"(
+    1. Y+ calculator is used only for pinitial first mesh layer estimations <br>
+    2. Refer to the documentation for the methodology description
+    )";
+
+    ui -> infoBrowser_Yp -> setHtml(footnote);
 
 
     // write an information section
@@ -227,14 +161,40 @@ STDAtmo::STDAtmo(QWidget *parent)
     </ul>
 
     <h3>Author</h3>
-    <p>  <li><a href="https://www.linkedin.com/in/stankarpuk/">Stanislav Karpuk</a></li></p>
+    <p><li><a href="https://www.linkedin.com/in/stankarpuk/">Stanislav Karpuk</a></li></p>
     )";
 
     ui -> infoBrowser -> setHtml(content);
 
+    // initialize the calculation description for the airspeeds tab
+    QString instructions = R"(
+    <strong>Instructions</strong><br>
+    1. Input the altitude and temperature deviations <br>
+    2. Select the airspeed to convert from by selecting a radio button <br>
+    3. Enter the airspeed of interest and click "Compute" <br><br>
+    * Refer to the documentation for the methodology description
+    )";
+    ui -> infoBrowser_SP -> setHtml(instructions);
+
+    QString STDAref = R"(
+    1. Refer to the documentation for the methodology description
+    )";
+    ui -> infoBrowser_STD -> setHtml(STDAref);
+
+
     // initialize the initial plot and the default range
     set_default_plot_inputs();
 
+    // set default airspeed radio button to CAS
+    ui -> CASradioButton ->click();
+
+    // disable all velocity inputs except for the CAS
+    ui->TASInpOut->setReadOnly(true);
+    ui->TASInpOut->setStyleSheet("background-color: #222222;");
+    ui->EASInpOut->setReadOnly(true);
+    ui->EASInpOut->setStyleSheet("background-color: #222222;");
+    ui->MachInpOut->setReadOnly(true);
+    ui->MachInpOut->setStyleSheet("background-color: #222222;");
 }
 
 STDAtmo::~STDAtmo()
@@ -244,18 +204,63 @@ STDAtmo::~STDAtmo()
 }
 
 
+
+double STDAtmo::convert_airspeed_Input(QComboBox* comboBox, double airspeed) {
+
+    // reads the combobox index and converts the airspeed to m/s
+
+    int selectedIndex = comboBox->currentIndex();  // Use parameter
+    double result;
+
+    switch (selectedIndex) {
+    case 0: result = airspeed; break;
+    case 1: result = Units::feetPerSecondToMetersPerSecond(airspeed); break;
+    case 2: result = Units::kilometersPerHourToMetersPerSecond(airspeed); break;
+    case 3: result = Units::milesPerHourToMetersPerSecond(airspeed); break;
+    case 4: result = Units::KnotsToMetersPerSecond(airspeed); break;
+    }
+
+    return result;
+}
+
+void STDAtmo::convert_airspeed(QComboBox* comboBox, QLineEdit* outputEdit, double airspeed) {
+
+    int selectedIndex = comboBox->currentIndex();  // Use parameter
+    double result;
+
+    QString init_text = outputEdit -> text();
+    if (init_text.isEmpty() && !computed) return;
+    else{
+        switch (selectedIndex) {
+        case 0: result = airspeed; break;
+        case 1: result = Units::metersPerSecondToFeetPerSecond(airspeed); break;
+        case 2: result = Units::metersPerSecondToKilometersPerHour(airspeed); break;
+        case 3: result = Units::metersPerSecondToMilesPerHour(airspeed); break;
+        case 4: result = Units::metersPerSecondToKnots(airspeed); break;
+        }
+
+        outputEdit->setText(QString::number(result, 'g', 4));
+    }
+
+}
+
+
 void STDAtmo::on_Reset_clicked()
 {
+
+    // resets all units and clears all inputs nad outputs in the
+    // standard atmosphere calculation and plotting tabs
+
     computed = false;
 
     // resets all units
-    QList<QComboBox*> comboBoxes = ui->centralwidget->findChildren<QComboBox*>();
+    QList<QComboBox*> comboBoxes = ui->tab->findChildren<QComboBox*>();
     for (QComboBox* comboBox : std::as_const(comboBoxes)) {
         comboBox->setCurrentIndex(0);  // Set to first item
     }
 
     // clears lineEdits
-    QList<QLineEdit*> lineEdits = ui->centralwidget->findChildren<QLineEdit*>();
+    QList<QLineEdit*> lineEdits = ui->tab->findChildren<QLineEdit*>();
     for (QLineEdit* lineEdit : lineEdits) {
         lineEdit->clear();
     }
@@ -272,6 +277,27 @@ void STDAtmo::on_Reset_clicked()
 }
 
 
+void STDAtmo::on_Reset_Yp_clicked()
+{
+    // removes all inputs nad outputs from the Y+ calculation list
+    // and returns to default units
+
+    // resets all units
+    QList<QComboBox*> comboBoxes = ui->tab_2->findChildren<QComboBox*>();
+    for (QComboBox* comboBox : std::as_const(comboBoxes)) {
+        comboBox->setCurrentIndex(0);  // Set to first item
+    }
+
+    // clears lineEdits
+    QList<QLineEdit*> lineEdits = ui->tab_2->findChildren<QLineEdit*>();
+    for (QLineEdit* lineEdit : lineEdits) {
+        lineEdit->clear();
+    }
+
+
+}
+
+
 void STDAtmo::set_default_plot_inputs(){
 
     // resets the default set of inputs for plotting
@@ -281,18 +307,40 @@ void STDAtmo::set_default_plot_inputs(){
     ui -> DAltInp -> setText(QString::number(1000));
 }
 
+
 void STDAtmo::on_Compute_clicked()
 {
+
+    // import class constants
+    const auto& Href = standardAtmosphere::Href;
+
 
     // Read the input values and convert to double
     QString dISAtext = ui -> dISAInp -> text();
     QString Alttext = ui -> AltitudeInp -> text();
 
+    // check if all inputs are written correctly
+    if (dISAtext.isEmpty() || Alttext.isEmpty()) {
+        QMessageBox::warning(this, "Error", "The input is empty. Enter the altitude and temperature deviation");
+        return;
+    }
+
+    if (!isDouble(dISAtext) ) {
+       QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+       ui->dISAInp->clear();
+       return;
+    }
+    else if (!isDouble(Alttext)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->AltitudeInp->clear();
+        return;
+    }
+
     dISA = dISAtext.toDouble();
     H  = Alttext.toDouble();            // geometric altitude
 
     // compute a geopotential altitude
-    Hgp = compute_geopotential_altitude(H);
+    Hgp = standardAtmosphere::compute_geopotential_altitude(H);
 
     // Read the units and convert to SI
     QString AltUnits = ui -> AltUnits -> currentText();
@@ -303,7 +351,7 @@ void STDAtmo::on_Compute_clicked()
 
     // Check the altitude limit
     if (Hgp > Href[7]){
-        if (Hgp > Href[7]+ Heps)     // adds a 0.5 m tolerance
+        if (Hgp > Href[7]+ Heps0)     // adds a 0.5 m tolerance
         {
             QMessageBox::information(this,"Title","You are aiming too high, son...\n Enter an altitude below 86 km");
         }
@@ -313,29 +361,23 @@ void STDAtmo::on_Compute_clicked()
     }
 
 
-    compute_standard_atmosphere(Hgp, dISA, g, p, T, ro, mu, a);
+    standardAtmosphere::compute_standard_atmosphere(Hgp, dISA, g, p, T, ro, mu, a);
     computed = true;
 
     // output results in appropriate units
-    output_results();
+    output_STDAresults();
 
 }
 
-void STDAtmo::on_GopAltCombo_currentIndexChanged(){output_results();}
+void STDAtmo::on_GopAltCombo_currentIndexChanged(){output_STDAresults();}
+void STDAtmo::on_PressureCombo_currentIndexChanged(){output_STDAresults();}
+void STDAtmo::on_TemperatureCombo_currentIndexChanged(){output_STDAresults();}
+void STDAtmo::on_DensityCombo_currentIndexChanged(){output_STDAresults();}
+void STDAtmo::on_SpeedSoundCombo_currentIndexChanged(){output_STDAresults();}
+void STDAtmo::on_ViscosityCombo_currentIndexChanged(){output_STDAresults();}
+void STDAtmo::on_GravityCombo_currentIndexChanged(){output_STDAresults();}
 
-void STDAtmo::on_PressureCombo_currentIndexChanged(){output_results();}
-
-void STDAtmo::on_TemperatureCombo_currentIndexChanged(){output_results();}
-
-void STDAtmo::on_DensityCombo_currentIndexChanged(){output_results();}
-
-void STDAtmo::on_SpeedSoundCombo_currentIndexChanged(){output_results();}
-
-void STDAtmo::on_ViscosityCombo_currentIndexChanged(){output_results();}
-
-void STDAtmo::on_GravityCombo_currentIndexChanged(){output_results();}
-
-void STDAtmo::output_results(){
+void STDAtmo::output_STDAresults(){
 
     /*
      The code output the data based on the combobox and
@@ -387,7 +429,7 @@ void STDAtmo::output_results(){
         case 4: ui -> SoundSpeedOutput -> setText(QString::number(Units::metersPerSecondToKnots(a)));   break;
     }
 
-    // Dynamic viscosoty
+    // Dynamic viscosity
     selectedText = ui->ViscosityCombo->currentIndex();
     switch (selectedText) {
         case 0: ui -> ViscosityOutput -> setText(QString::number(mu));  break;
@@ -414,6 +456,44 @@ void STDAtmo::on_UnitTypePlot_currentIndexChanged(){
     update_plotting_units();
 }
 
+void STDAtmo::convert_input_values_Ypp(double &Uinf, double &rhoinf, double &muinf, double &Lref){
+
+    // converts all inputs to SI units depending on the local combobox units setup
+
+    int selectedText;
+
+    // Density
+    selectedText = ui->DensityCombo_Yp->currentIndex();
+    switch (selectedText) {
+    case 0: break;
+    case 1: rhoinf = Units::slugPerFt3ToKgPerM3(rhoinf); break;
+    }
+
+    // Airspeed
+    selectedText = ui->AirspeedUnits_Yp->currentIndex();
+    switch (selectedText) {
+    case 0: break;
+    case 1: Uinf = Units::kilometersPerHourToMetersPerSecond(Uinf); break;
+    case 2: Uinf = Units::feetPerSecondToMetersPerSecond(Uinf); break;
+    case 3: Uinf = Units::milesPerHourToMetersPerSecond(Uinf); break;
+    case 4: Uinf = Units::KnotsToMetersPerSecond(Uinf); break;
+    }
+
+    // Dynamic viscosity
+    selectedText = ui->ViscosityCombo_Yp->currentIndex();
+    switch (selectedText) {
+    case 0: break;
+    case 1: muinf = Units::lbfSecondPerFt2ToPascalSecond(muinf); break;
+    }
+
+    // Characteristic length
+    selectedText = ui->AltUnits_Yp->currentIndex();
+    switch (selectedText) {
+    case 0: break;
+    case 1: muinf = Units::feetToMeter(muinf); break;
+    }
+
+}
 
 void STDAtmo::on_UnitSetup_currentIndexChanged(){
 
@@ -532,6 +612,9 @@ void STDAtmo::update_plotting_units(){
 void STDAtmo::on_Plot_graph_clicked()
 {
 
+    // import class constants
+    const auto& Href = standardAtmosphere::Href;
+
     ui->PlottingWidget->clearGraphs();
 
     // plots standard atmosphere properties
@@ -541,6 +624,24 @@ void STDAtmo::on_Plot_graph_clicked()
     QString pl_type = ui -> UnitTypePlot -> currentText();
     QString unit_inp = ui -> UnitPlot -> currentText();
     QString unit_def = ui -> UnitSetup -> currentText();
+
+    // check if any input is not a number
+    if (!isDouble(HminText) ) {
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->AltitudeMinInp->clear();
+        return;
+    }
+    else if (!isDouble(HmaxText)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->AltitudeMaxInp->clear();
+        return;
+        }
+    else if (!isDouble(dHText)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->DAltInp->clear();
+        return;
+        }
+
 
     hbegin = HminText.toDouble();
     hend   = HmaxText.toDouble();
@@ -560,8 +661,8 @@ void STDAtmo::on_Plot_graph_clicked()
     }
 
     // compute geopotential altitudes
-    double hbeg_geo = compute_geopotential_altitude(hbegin);
-    double hend_geo = compute_geopotential_altitude(hend);
+    double hbeg_geo = standardAtmosphere::compute_geopotential_altitude(hbegin);
+    double hend_geo = standardAtmosphere::compute_geopotential_altitude(hend);
 
     QVector<QPair<double, double>> atmoData;
 
@@ -570,17 +671,17 @@ void STDAtmo::on_Plot_graph_clicked()
 
     // compute points to plot
     for (double X = hbegin; X <= hend + 1e-6; X += dh) {
-        double Hgp = compute_geopotential_altitude(X);
-        compute_standard_atmosphere(Hgp, dISA, g, p, T, ro, mu, a);
-        append_selected_unit_value(compute_geometric_altitude(Hgp), g, p, T, ro, mu, a, atmoData,
+        double Hgp = standardAtmosphere::compute_geopotential_altitude(X);
+        standardAtmosphere::compute_standard_atmosphere(Hgp, dISA, g, p, T, ro, mu, a);
+        append_selected_unit_value(standardAtmosphere::compute_geometric_altitude(Hgp), g, p, T, ro, mu, a, atmoData,
                                    pl_type, unit_inp, unit_def);
     }
 
     // determine how many layers and points are required
     for (int i = 0; i < 8; ++i) {
         if (Href[i] > hbeg_geo && Href[i] < hend_geo) {
-            compute_standard_atmosphere(Href[i], dISA, g, p, T, ro, mu, a);
-            append_selected_unit_value(compute_geometric_altitude(Href[i]), g, p, T, ro, mu, a, atmoData,
+            standardAtmosphere::compute_standard_atmosphere(Href[i], dISA, g, p, T, ro, mu, a);
+            append_selected_unit_value(standardAtmosphere::compute_geometric_altitude(Href[i]), g, p, T, ro, mu, a, atmoData,
                                        pl_type, unit_inp, unit_def);
         }
     }
@@ -604,16 +705,16 @@ void STDAtmo::on_Plot_graph_clicked()
             do {
                 // compute geopotential altitude depending on units specified
                 if (unit_def == "US") {
-                    gp_alt = compute_geopotential_altitude(Units::feetToMeter(atmoData[datacount].second));
+                    gp_alt = standardAtmosphere::compute_geopotential_altitude(Units::feetToMeter(atmoData[datacount].second));
                 }
                 else{
-                    gp_alt = compute_geopotential_altitude(atmoData[datacount].second);
+                    gp_alt = standardAtmosphere::compute_geopotential_altitude(atmoData[datacount].second);
                 }
                 // append calculated values into separate vectors
                 xData.append(atmoData[datacount].second);
                 yData.append(atmoData[datacount].first);
                 datacount += 1;
-            } while (gp_alt + Heps < Href[i] && datacount < data_size);         // used tolerance to avoid issue while converting units
+            } while (gp_alt + Heps0 < Href[i] && datacount < data_size);         // used tolerance to avoid issue while converting units
 
             // plot the graph
             if (!xData.isEmpty()) {
@@ -640,4 +741,358 @@ void STDAtmo::on_Plot_graph_clicked()
 
 }
 
+
+void STDAtmo::on_AltUnits_Yp_2_currentIndexChanged()
+{
+    // updates the first mesh layer step size units output
+    if (!computed) return;
+
+    int selectedText;
+
+    // Altitude output
+    selectedText = ui-> AltUnits_Yp_2 -> currentIndex();
+    switch (selectedText){
+    case 0: ui -> dsOutp_Yp -> setText(QString::number(ds, 'e', 4)); break;
+    case 1: ui -> dsOutp_Yp -> setText(QString::number(Units::metersToFeet(ds), 'e', 4)); break;
+    }
+}
+
+
+void STDAtmo::on_Compute_Yp_clicked()
+{
+    // computs the first mesh layer step size using a flat plate formulation
+
+    // Extract inputs
+    QString Vinf_text  = ui -> AirspeedInp_Yp -> text();
+    QString roinf_text = ui -> DensityInp_Yp -> text();
+    QString muinf_text = ui -> ViscosityInp_Yp -> text();
+    QString Lref_text = ui -> LengthInp_Yp -> text();
+    QString Yp_text = ui -> YpInp_Yp -> text();
+
+    // check if all inputs are written correctly
+    if (Vinf_text.isEmpty() || roinf_text.isEmpty() || muinf_text.isEmpty() || Lref_text.isEmpty() || Yp_text.isEmpty()) {
+        QMessageBox::warning(this, "Error", "The input is empty. Enter the the altitude, airspeed, and temperatute deviation");
+        return;
+    }
+
+    if (!isDouble(Vinf_text) ) {
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->AirspeedInp_Yp->clear();
+        return;
+    }
+    else if (!isDouble(roinf_text)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->DensityInp_Yp->clear();
+        return;
+    }
+    else if (!isDouble(muinf_text)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->ViscosityInp_Yp->clear();
+        return;
+    }
+    else if (!isDouble(Lref_text)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->LengthInp_Yp->clear();
+        return;
+    }
+    else if (!isDouble(Yp_text)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->YpInp_Yp->clear();
+        return;
+    }
+
+
+    // convert inputs into SI units
+    double rho_inf = roinf_text.toDouble();
+    double Uinf = Vinf_text.toDouble();
+    double muinf = muinf_text.toDouble();
+    double Lref = Lref_text.toDouble();
+    double Ypp  = Yp_text.toDouble();
+
+    convert_input_values_Ypp(Uinf, rho_inf, muinf, Lref);
+
+    // compute Re and first step size
+    double Re    = rho_inf * Uinf * Lref / muinf;
+    double Cf    = 0.455 / pow(log10(Re), 2.58);
+    double tau_w = 0.5 * Cf * rho_inf * pow(Uinf, 2);
+    double Ufric = pow(tau_w/rho_inf, 0.5);
+    ds = Ypp * muinf / (Ufric * rho_inf);
+
+    // output results
+    ui -> ReOutp_Yp -> setText(QString::number(Re));
+
+    QString output_units = ui -> AltUnits_Yp_2 ->currentText();
+    if (output_units == "ft"){
+        ui -> dsOutp_Yp -> setText(QString::number(Units::metersToFeet(ds), 'e', 4));
+    }
+    else{
+        ui -> dsOutp_Yp -> setText(QString::number(ds, 'e', 4));
+    }
+
+
+
+}
+
+
+
+void STDAtmo::on_Reset_SP_clicked()
+{
+    // resets all units and clears all inputs
+    // and outputs in the airspeed tab
+
+    computed = false;
+
+    // resets all units
+    QList<QComboBox*> comboBoxes = ui->tab_5->findChildren<QComboBox*>();
+    for (QComboBox* comboBox : std::as_const(comboBoxes)) {
+        comboBox->setCurrentIndex(0);  // Set to first item
+    }
+
+    // clears lineEdits
+    QList<QLineEdit*> lineEdits = ui->tab_5->findChildren<QLineEdit*>();
+    for (QLineEdit* lineEdit : lineEdits) {
+        lineEdit->clear();
+    }
+
+
+}
+
+
+void STDAtmo::on_Compute_SP_clicked()
+{
+
+    // computes airspeeds based on the given speed,
+    // altitude and temperature devaition inputs
+
+    // import class constants
+    const auto& Href = standardAtmosphere::Href;
+
+
+    // Read the input values and convert to double
+    QString dISAtext = ui -> dISAInp_SP -> text();
+    QString Alttext = ui -> AltitudeInp_SP -> text();
+
+    // check if all inputs are written correctly
+    if (dISAtext.isEmpty() || Alttext.isEmpty()) {
+        QMessageBox::warning(this, "Error", "The input is empty. Enter the values");
+        return;
+    }
+
+    if (!isDouble(dISAtext) ) {
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->dISAInp_SP->clear();
+        return;
+    }
+    else if (!isDouble(Alttext)){
+        QMessageBox::warning(this, "Error", "Enter numbers as inputs");
+        ui->AltitudeInp_SP->clear();
+        return;
+    }
+
+    dISA = dISAtext.toDouble();
+    H  = Alttext.toDouble();            // geometric altitude
+
+    // compute a geopotential altitude
+    Hgp = standardAtmosphere::compute_geopotential_altitude(H);
+
+    // Read the units and convert to SI
+    QString AltUnits = ui -> AltUnits_SP -> currentText();
+    QString dISAUnits = ui -> TempUnits_SP -> currentText();
+
+    if (AltUnits == "ft") { Hgp /= 3.28084; }
+    if (dISAUnits == "°F / °R") { dISA = dISA * 5/9; }
+
+    // Check the altitude limit
+    if (Hgp > Href[7]){
+        if (Hgp > Href[7]+ Heps0)     // adds a 0.5 m tolerance
+        {
+            QMessageBox::information(this,"Title","You are aiming too high, son...\n Enter an altitude below 86 km");
+        }
+        else{
+            Hgp = Href[7];
+        }
+    }
+
+    standardAtmosphere::compute_standard_atmosphere(Hgp, dISA, g, p, T, ro, mu, a);
+
+
+    // convert airspeeds
+    bool CAS_flag = ui -> CASradioButton->isChecked();
+    bool EAS_flag = ui -> EASradioButton->isChecked();
+    bool TAS_flag = ui -> TASradioButton->isChecked();
+    bool Mach_flag = ui -> MachradioButton->isChecked();
+
+    if (TAS_flag == 1){
+
+
+        // extract TAS
+        QString VTAS_text = ui -> TASInpOut -> text();
+
+        // check if the airspeed was entered
+        if (VTAS_text.isEmpty()) {
+            QMessageBox::warning(this, "Error", "The input is empty. Enter the airspeed");
+            return;
+        }
+
+        // convert to m/s
+        VTAS = VTAS_text.toDouble();
+        VTAS = STDAtmo::convert_airspeed_Input(ui -> TASCombo, VTAS);
+
+        // compute EAS
+        VEAS = standardAtmosphere::EASfromTAS(ro, VTAS);
+
+        // compute Mach number
+        Mach = standardAtmosphere::MachfromTAS(a, VTAS);
+
+        // compute calibrated airspeed
+        VCAS = standardAtmosphere::CASfromEAS(p, VEAS, Mach);
+
+    }
+
+    else if (CAS_flag == 1){
+
+        // extract CAS
+        QString VCAS_text = ui -> CASInpOut -> text();
+
+        // check if the airspeed was entered
+        if (VCAS_text.isEmpty()) {
+            QMessageBox::warning(this, "Error", "The input is empty. Enter the airspeed");
+            return;
+        }
+
+        // convert to m/s
+        VCAS = VCAS_text.toDouble();
+        VCAS = STDAtmo::convert_airspeed_Input(ui -> CASCombo, VCAS);
+
+        // compute Mach number
+        Mach = standardAtmosphere::MachfromCAS(p, VCAS);
+
+        // compute TAS
+        VTAS = standardAtmosphere::TASfromMach(a, Mach);
+
+        // compute EAS
+        VEAS = standardAtmosphere::EASfromTAS(ro, VTAS);
+
+    }
+
+    else if (EAS_flag == 1){
+
+        // extract EAS
+        QString VEAS_text = ui -> EASInpOut -> text();
+
+        // check if the airspeed was entered
+        if (VEAS_text.isEmpty()) {
+            QMessageBox::warning(this, "Error", "The input is empty. Enter the airspeed");
+            return;
+        }
+
+        // convert to m/s
+        VEAS = VEAS_text.toDouble();
+        VEAS = STDAtmo::convert_airspeed_Input(ui -> EASCombo, VEAS);
+
+        // compute TAS
+        VTAS = standardAtmosphere::TASfromEAS(ro, VEAS);
+
+        // compute Mach number
+        Mach = standardAtmosphere::MachfromTAS(a, VTAS);
+
+        // compute CAS
+        VCAS = standardAtmosphere::CASfromEAS(p, VEAS, Mach);
+
+    }
+
+    else if (Mach_flag == 1){
+
+        // extract Mach
+        QString Mach_text = ui -> MachInpOut -> text();
+        Mach = Mach_text.toDouble();
+
+        // check if the airspeed was entered
+        if (Mach_text.isEmpty()) {
+            QMessageBox::warning(this, "Error", "The input is empty. Enter the Mach number");
+            return;
+        }
+
+        // compute TAS
+        VTAS = standardAtmosphere::TASfromMach(a, Mach);
+
+        // compute EAS
+        VEAS = standardAtmosphere::EASfromTAS(ro, VTAS);
+
+        // compute CAS
+        VCAS = standardAtmosphere::CASfromEAS(p, VEAS, Mach);
+
+    }
+
+    computed = true;
+
+    // output results
+    convert_airspeed(ui->CASCombo, ui->CASInpOut, VCAS);
+    convert_airspeed(ui->TASCombo, ui->TASInpOut, VTAS);
+    convert_airspeed(ui->EASCombo, ui->EASInpOut, VEAS);
+
+    ui -> MachInpOut -> setText(QString::number(Mach, 'g', 3));
+
+}
+
+
+void STDAtmo::on_CASradioButton_clicked()
+{
+    // adjust lineEdits. CAS
+    ui->CASInpOut->setReadOnly(false);
+    ui->CASInpOut->setStyleSheet("");
+    ui->TASInpOut->setReadOnly(true);
+    ui->TASInpOut->setStyleSheet("background-color: #222222;");
+    ui->EASInpOut->setReadOnly(true);
+    ui->EASInpOut->setStyleSheet("background-color: #222222;");
+    ui->MachInpOut->setReadOnly(true);
+    ui->MachInpOut->setStyleSheet("background-color: #222222;");
+}
+
+
+void STDAtmo::on_MachradioButton_clicked()
+{
+    // adjust lineEdits. Mach
+    ui->TASInpOut->setReadOnly(true);
+    ui->TASInpOut->setStyleSheet("background-color: #222222;");
+    ui->EASInpOut->setReadOnly(true);
+    ui->EASInpOut->setStyleSheet("background-color: #222222;");
+    ui->CASInpOut->setReadOnly(true);
+    ui->CASInpOut->setStyleSheet("background-color: #222222;");
+    ui->MachInpOut->setReadOnly(false);
+    ui->MachInpOut->setStyleSheet("");
+}
+
+
+void STDAtmo::on_EASradioButton_clicked()
+{
+    // adjust lineEdits. EAS
+    ui->TASInpOut->setReadOnly(true);
+    ui->TASInpOut->setStyleSheet("background-color: #222222;");
+    ui->MachInpOut->setReadOnly(true);
+    ui->MachInpOut->setStyleSheet("background-color: #222222;");
+    ui->CASInpOut->setReadOnly(true);
+    ui->CASInpOut->setStyleSheet("background-color: #222222;");
+    ui->EASInpOut->setReadOnly(false);
+    ui->EASInpOut->setStyleSheet("");
+}
+
+
+void STDAtmo::on_TASradioButton_clicked()
+{
+    // adjust lineEdits. TAS
+    ui->EASInpOut->setReadOnly(true);
+    ui->EASInpOut->setStyleSheet("background-color: #222222;");
+    ui->MachInpOut->setReadOnly(true);
+    ui->MachInpOut->setStyleSheet("background-color: #222222;");
+    ui->CASInpOut->setReadOnly(true);
+    ui->CASInpOut->setStyleSheet("background-color: #222222;");
+    ui->TASInpOut->setReadOnly(false);
+    ui->TASInpOut->setStyleSheet("");
+}
+
+
+void STDAtmo::on_TASCombo_currentIndexChanged(){convert_airspeed(ui-> TASCombo, ui-> TASInpOut, VTAS);}
+void STDAtmo::on_EASCombo_currentIndexChanged(){convert_airspeed(ui-> EASCombo, ui-> EASInpOut, VEAS);}
+void STDAtmo::on_CASCombo_currentIndexChanged(){convert_airspeed(ui-> CASCombo, ui-> CASInpOut, VCAS);}
 
