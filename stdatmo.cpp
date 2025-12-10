@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <array>
+#include <fstream>
 
 #include "stdatmo.h"
 #include "ui_stdatmo.h"
@@ -11,8 +12,10 @@
 #include "standardAtmosphere.h"
 
 
-// Define necessary constants
+// Define necessary constants and sole global variables
 const double Heps0  = 2.0;
+QVector<QPair<double, double>> atmoData;
+QString plot_unit_type, plot_unitsX, plot_unitsY;
 
 
 
@@ -32,86 +35,118 @@ void append_selected_unit_value(double H, double &g, double &p, double &T, doubl
 
     // appends the value of interest into an array to plot
     if (pl_type == "Pressure"){
+        plot_unit_type = "Pressure";
         if (unit_setup == "SI"){
+            plot_unitsY = "m";
             if (unit_type == "mmHg"){
+                plot_unitsX = "mmHg";
                 atmoData.append(qMakePair(Units::pascalsToMmHg(p), H));
             }
             else {
+                plot_unitsX = "Pa";
                 atmoData.append(qMakePair(p, H));
             }
         }
         else {
-                atmoData.append(qMakePair(Units::pascalsToMmHg(p), Units::metersToFeet(H)));
+            plot_unitsY = "ft";
+            plot_unitsX = "lb/ft2";
+            atmoData.append(qMakePair(Units::pascalSecondToLbfSecondPerFt2(p), Units::metersToFeet(H)));
             }
         }
     else if (pl_type == "Temperature"){
+        plot_unit_type = "Temperature";
         if (unit_setup == "SI"){
+            plot_unitsY = "m";
             if (unit_type == "°C"){
+                plot_unitsX = "°C";
                 atmoData.append(qMakePair(Units::kelvinToCelsius(T), H));
             }
             else
             {
+                plot_unitsX = "K";
                 atmoData.append(qMakePair(T, H));
             }
         }
         else{
+            plot_unitsY = "m";
             if (unit_type == "°F"){
+                plot_unitsX = "°F";
                 atmoData.append(qMakePair(Units::kelvinToFahrenheit(T), Units::metersToFeet(H)));
                 }
             else{
+                plot_unitsX = "°R";
                 atmoData.append(qMakePair(Units::kelvinToRankine(T), Units::metersToFeet(H)));
                 }
             }
         }
     else if (pl_type == "Speed of sound"){
+        plot_unit_type = "Speed of sound";
         if (unit_setup == "SI"){
+            plot_unitsY = "m";
             if (unit_type == "km/hr"){
+                plot_unitsX = "km/hr";
                 atmoData.append(qMakePair(Units::metersPerSecondToKilometersPerHour(a), H));
             }
             else{
+                plot_unitsX = "m/s";
                 atmoData.append(qMakePair(a, H));
             }
         }
         else{
+            plot_unitsY = "ft";
             if (unit_type == "ft/s"){
+                plot_unitsX = "ft/s";
                 atmoData.append(qMakePair(Units::metersPerSecondToFeetPerSecond(a), Units::metersToFeet(H)));
             }
             else if (unit_type == "mi/hr"){
+                plot_unitsX = "mi/hr";
                 atmoData.append(qMakePair(Units::metersPerSecondToMilesPerHour(a), Units::metersToFeet(H)));
             }
             else{
+                plot_unitsX = "knots";
                 atmoData.append(qMakePair(Units::metersPerSecondToKnots(a), Units::metersToFeet(H)));
             }
             }
         }
         else if (pl_type == "Density"){
+            plot_unit_type = "Density";
             if (unit_setup == "SI"){
+                plot_unitsY = "m";
+                plot_unitsX = "kg/m3";
                 atmoData.append(qMakePair(rho, H));
             }
             else{
+                plot_unitsY = "ft";
+                plot_unitsX = "slug/ft3";
                 atmoData.append(qMakePair(Units::kgPerM3ToSlugPerFt3(rho), Units::metersToFeet(H)));
             }
         }
     else if (pl_type == "Dynamic viscosity"){
+            plot_unit_type = "Dynamic viscosity";
             if (unit_setup == "SI"){
+                plot_unitsY = "m";
+                plot_unitsX = "Pa.s";
                 atmoData.append(qMakePair(mu, H));
             }
             else{
+                plot_unitsY = "ft";
+                plot_unitsX = "lb.s/ft2";
                 atmoData.append(qMakePair(Units::pascalSecondToLbfSecondPerFt2(mu), Units::metersToFeet(H)));
             }
         }
     else{
             if (unit_setup == "SI"){
+                plot_unitsY = "m";
+                plot_unitsX = "m/s2";
                 atmoData.append(qMakePair(g, H));
             }
             else{
+                plot_unitsY = "ft";
+                plot_unitsX = "ft/s2";
                 atmoData.append(qMakePair(Units::metersPerSecondToFeetPerSecond(g), Units::metersToFeet(H)));
             }
         }
-
-
 }
-
 
 
 STDAtmo::STDAtmo(QWidget *parent)
@@ -122,9 +157,9 @@ STDAtmo::STDAtmo(QWidget *parent)
 
 
     // plot default parameters for the plotting widget
-    ui->PlottingWidget->xAxis->setLabel("Temperature, K");
+    ui->PlottingWidget->xAxis->setLabel(" ");
     ui->PlottingWidget->yAxis->setLabel("Altitude, m");
-    ui->PlottingWidget->xAxis->setRange(0,288);
+    ui->PlottingWidget->xAxis->setRange(0,1);
     ui->PlottingWidget->yAxis->setRange(0,86000);
     ui->PlottingWidget->replot();
 
@@ -204,6 +239,13 @@ STDAtmo::~STDAtmo()
 }
 
 
+void STDAtmo::checkAirspeed(double airspeed){
+
+    if (airspeed < 0 ) {
+        QMessageBox::warning(this, "Error", "Enter a positive airspeed");
+        return;
+    }
+}
 
 double STDAtmo::convert_airspeed_Input(QComboBox* comboBox, double airspeed) {
 
@@ -277,6 +319,19 @@ void STDAtmo::on_Reset_clicked()
 }
 
 
+void STDAtmo::on_Reset_graph_clicked()
+{
+    // clears the plot and removes saved data
+
+    ui -> PlottingWidget -> clearGraphs();
+    ui->PlottingWidget->xAxis->setLabel(" ");
+    ui->PlottingWidget->yAxis->setLabel("Altitude, m");
+    ui->PlottingWidget->xAxis->setRange(0,1);
+    ui->PlottingWidget->yAxis->setRange(0,86000);
+    ui->PlottingWidget->replot();
+
+}
+
 void STDAtmo::on_Reset_Yp_clicked()
 {
     // removes all inputs nad outputs from the Y+ calculation list
@@ -293,7 +348,6 @@ void STDAtmo::on_Reset_Yp_clicked()
     for (QLineEdit* lineEdit : lineEdits) {
         lineEdit->clear();
     }
-
 
 }
 
@@ -350,6 +404,12 @@ void STDAtmo::on_Compute_clicked()
     if (dISAUnits == "°F / °R") { dISA = dISA * 5/9; }
 
     // Check the altitude limit
+
+    if (Hgp < 0){
+        QMessageBox::warning(this, "Error", "The altitude range must be greater than 0. Add a positive altitude");
+        return;
+    }
+
     if (Hgp > Href[7]){
         if (Hgp > Href[7]+ Heps0)     // adds a 0.5 m tolerance
         {
@@ -615,13 +675,13 @@ void STDAtmo::on_Plot_graph_clicked()
     // import class constants
     const auto& Href = standardAtmosphere::Href;
 
-    ui->PlottingWidget->clearGraphs();
+    ui -> PlottingWidget -> clearGraphs();
 
     // plots standard atmosphere properties
     QString HminText = ui -> AltitudeMinInp -> text();
     QString HmaxText = ui -> AltitudeMaxInp -> text();
-    QString dHText = ui -> DAltInp -> text();
-    QString pl_type = ui -> UnitTypePlot -> currentText();
+    QString dHText   = ui -> DAltInp -> text();
+    QString pl_type  = ui -> UnitTypePlot -> currentText();
     QString unit_inp = ui -> UnitPlot -> currentText();
     QString unit_def = ui -> UnitSetup -> currentText();
 
@@ -647,6 +707,13 @@ void STDAtmo::on_Plot_graph_clicked()
     hend   = HmaxText.toDouble();
     dh     = dHText.toDouble();
 
+    if (hbegin < 0 || hend > 86000 || dh < 0){
+        QMessageBox::warning(this, "Error", "The altitude range must be between 0 and 86000 m with a "
+                                            "positive altitude increment. Enter a valid region");
+        return;
+    }
+
+
     // Configure plot
     QString yLabel = (unit_def == "SI") ? "Altitude, m" : "Altitude, ft";
     ui->PlottingWidget->yAxis->setLabel(yLabel);
@@ -660,11 +727,11 @@ void STDAtmo::on_Plot_graph_clicked()
         dh = Units::feetToMeter(dh);
     }
 
+    atmoData.clear();
+
     // compute geopotential altitudes
     double hbeg_geo = standardAtmosphere::compute_geopotential_altitude(hbegin);
     double hend_geo = standardAtmosphere::compute_geopotential_altitude(hend);
-
-    QVector<QPair<double, double>> atmoData;
 
     int Npoints = static_cast<int>(std::ceil((hend - hbegin) / dh)) + 1;        // number of points to plot except for the lazers boundaries
     atmoData.reserve(Npoints + 8);   // reserves extra 8 points for potential layers
@@ -726,6 +793,7 @@ void STDAtmo::on_Plot_graph_clicked()
                 Xmin.append(*std::min_element(yData.begin(), yData.end()));
                 Ymin.append(*std::min_element(xData.begin(), xData.end()));
 
+                ui->PlottingWidget->graph()->setPen(QPen(Qt::blue, 2));
                 ui->PlottingWidget-> xAxis -> setRange(*std::min_element(Xmin.begin(), Xmin.end()) * 0.99,
                                             *std::max_element(Xmax.begin(), Xmax.end()) * 1.01);
                 ui->PlottingWidget-> yAxis -> setRange(*std::min_element(Ymin.begin(), Ymin.end()),
@@ -771,7 +839,7 @@ void STDAtmo::on_Compute_Yp_clicked()
 
     // check if all inputs are written correctly
     if (Vinf_text.isEmpty() || roinf_text.isEmpty() || muinf_text.isEmpty() || Lref_text.isEmpty() || Yp_text.isEmpty()) {
-        QMessageBox::warning(this, "Error", "The input is empty. Enter the the altitude, airspeed, and temperatute deviation");
+        QMessageBox::warning(this, "Error", "The input is empty. Enter all necessary inputs");
         return;
     }
 
@@ -809,6 +877,11 @@ void STDAtmo::on_Compute_Yp_clicked()
     double Lref = Lref_text.toDouble();
     double Ypp  = Yp_text.toDouble();
 
+    if (rho_inf < 0 || Uinf < 0 || muinf < 0 || Lref < 0 || Ypp < 0) {
+        QMessageBox::warning(this, "Error", "All inputs must be positive");
+        return;
+    }
+
     convert_input_values_Ypp(Uinf, rho_inf, muinf, Lref);
 
     // compute Re and first step size
@@ -819,20 +892,17 @@ void STDAtmo::on_Compute_Yp_clicked()
     ds = Ypp * muinf / (Ufric * rho_inf);
 
     // output results
-    ui -> ReOutp_Yp -> setText(QString::number(Re));
+    ui -> ReOutp_Yp -> setText(QString::number(Re, 'e', 3));
 
     QString output_units = ui -> AltUnits_Yp_2 ->currentText();
     if (output_units == "ft"){
-        ui -> dsOutp_Yp -> setText(QString::number(Units::metersToFeet(ds), 'e', 4));
+        ui -> dsOutp_Yp -> setText(QString::number(Units::metersToFeet(ds), 'e', 3));
     }
     else{
         ui -> dsOutp_Yp -> setText(QString::number(ds, 'e', 4));
     }
 
-
-
 }
-
 
 
 void STDAtmo::on_Reset_SP_clicked()
@@ -889,8 +959,14 @@ void STDAtmo::on_Compute_SP_clicked()
         return;
     }
 
+
     dISA = dISAtext.toDouble();
     H  = Alttext.toDouble();            // geometric altitude
+
+    if (H < 0 ) {
+        QMessageBox::warning(this, "Error", "Enter a positive altitude");
+        return;
+    }
 
     // compute a geopotential altitude
     Hgp = standardAtmosphere::compute_geopotential_altitude(H);
@@ -936,6 +1012,7 @@ void STDAtmo::on_Compute_SP_clicked()
 
         // convert to m/s
         VTAS = VTAS_text.toDouble();
+        checkAirspeed(VTAS);
         VTAS = STDAtmo::convert_airspeed_Input(ui -> TASCombo, VTAS);
 
         // compute EAS
@@ -962,6 +1039,7 @@ void STDAtmo::on_Compute_SP_clicked()
 
         // convert to m/s
         VCAS = VCAS_text.toDouble();
+        checkAirspeed(VCAS);
         VCAS = STDAtmo::convert_airspeed_Input(ui -> CASCombo, VCAS);
 
         // compute Mach number
@@ -988,6 +1066,7 @@ void STDAtmo::on_Compute_SP_clicked()
 
         // convert to m/s
         VEAS = VEAS_text.toDouble();
+        checkAirspeed(VEAS);
         VEAS = STDAtmo::convert_airspeed_Input(ui -> EASCombo, VEAS);
 
         // compute TAS
@@ -1005,6 +1084,7 @@ void STDAtmo::on_Compute_SP_clicked()
 
         // extract Mach
         QString Mach_text = ui -> MachInpOut -> text();
+        checkAirspeed(Mach);
         Mach = Mach_text.toDouble();
 
         // check if the airspeed was entered
@@ -1095,4 +1175,44 @@ void STDAtmo::on_TASradioButton_clicked()
 void STDAtmo::on_TASCombo_currentIndexChanged(){convert_airspeed(ui-> TASCombo, ui-> TASInpOut, VTAS);}
 void STDAtmo::on_EASCombo_currentIndexChanged(){convert_airspeed(ui-> EASCombo, ui-> EASInpOut, VEAS);}
 void STDAtmo::on_CASCombo_currentIndexChanged(){convert_airspeed(ui-> CASCombo, ui-> CASInpOut, VCAS);}
+
+
+void STDAtmo::on_Export_graph_clicked()
+{
+    // export plotted results into a CSV file
+    std::ofstream outputFile;
+
+    QString fileName = QFileDialog::getSaveFileName(this,
+                                                    "Save Plot Data",                      // Dialog title
+                                                    QDir::homePath() + "/STDAtmo_plot.csv", // Default directory and filename
+                                                    "CSV Files (*.csv);;All Files (*)"      // File filters
+                                                    );
+
+    if (!fileName.isEmpty()) {
+        QFile file(fileName);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            // Use QTextStream instead of std::ofstream
+            QTextStream out(&file);
+
+            // Write header - convert QString to stream
+            out << "Altitude, " << plot_unitsY << " ; "
+                << plot_unit_type << ", " << plot_unitsX << "\n";
+
+            // Write data
+            for (int i = 0; i < atmoData.size(); ++i) {
+                out << atmoData[i].second << " ; " << atmoData[i].first << "\n";
+            }
+
+            file.close();
+
+            QMessageBox::information(this, "Success",
+                                     QString("File saved to:\n%1").arg(fileName));
+        } else {
+            QMessageBox::warning(this, "Error",
+                                 QString("Could not save file:\n%1\nError: %2")
+                                     .arg(fileName, file.errorString()));
+        }
+    }
+
+}
 

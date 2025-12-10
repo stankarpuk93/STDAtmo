@@ -1,7 +1,5 @@
 #include "standardatmosphere.h"
 #include "cmath"
-#include "iostream"
-
 
 void standardAtmosphere::compute_speed_of_sound_and_viscosity(double &a, double &mu, double T) {
 
@@ -127,20 +125,10 @@ double standardAtmosphere::MachfromTAS(double a, double VTAS){
 double standardAtmosphere::MachfromCAS(double p, double CAS){
 
     // converts from CAS to Mach
-    std::cout << ", CAS=" << CAS << std::endl;
     double delta = p / p0;
     double A = pow(1 + 0.5*(gamma-1)*pow(CAS/a0,2),gamma/(gamma-1))-1;
     double Mach = sqrt(2/(gamma-1)*(pow(1/delta*A+1,(gamma-1)/gamma)-1));
 
-    std::cout << ", A=" << A << std::endl;
-    std::cout << ", Mach=" << Mach << std::endl;
-
     return Mach;
 }
-
-
-
-
-
-
 

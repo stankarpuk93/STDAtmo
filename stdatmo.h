@@ -84,6 +84,12 @@ private slots:
 
     void on_CASCombo_currentIndexChanged();
 
+    void on_Reset_graph_clicked();
+
+    void on_Export_graph_clicked();
+
+    void checkAirspeed(double airspeed);
+
 private:
     Ui::STDAtmo *ui;
 
