@@ -1,8 +1,5 @@
 # STDAtmo
-A lightweight desktop calculator of 1976 U.S. Standard Atmosphere 
 
-
-# Standard Atmosphere Calculator
 [![Windows](https://img.shields.io/badge/Windows-11-blue)]()
 [![Qt](https://img.shields.io/badge/Qt-6.5+-green)]()
 [![License](https://img.shields.io/badge/License-MIT-green)]()
