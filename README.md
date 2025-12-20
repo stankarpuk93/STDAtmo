@@ -5,7 +5,8 @@
 [![License](https://img.shields.io/badge/License-MIT-green)]()
 [![C++](https://img.shields.io/badge/C++-17-orange)]()
 
-A lightweight Qt-based calculator for standard atmospheric properties with an 1976 U.S. Standard Atmosphere implementation.
+A lightweight Qt-based calculator for standard atmospheric properties with an 1976 U.S. Standard Atmosphere implementation and adjecent calculations offten used by flight sciences and aerodynamics engineers
+
 
 ## Features
 
@@ -13,6 +14,8 @@ A lightweight Qt-based calculator for standard atmospheric properties with an 19
 - **Multi-Unit Support** - SI and US units
 - **Temperature Deviation** - Calculate with non-standard conditions
 - **Plotting** - Plots standard atmosphere properties for a given range
+- **Airspeed converter** - Convertes airspeeds at given altitudes and temperature deviations
+- **Y+ calculator** - provides an initial first mesh layer height at given conditions 
 
 ## Installation
 
