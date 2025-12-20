@@ -166,8 +166,35 @@ STDAtmo::STDAtmo(QWidget *parent)
 
     // write infor for the Y+ calculator
     QString footnote = R"(
-    1. Y+ calculator is used only for pinitial first mesh layer estimations <br>
-    2. Refer to the documentation for the methodology description
+    1. Y+ calculator is used only for initial first mesh layer estimations <br>
+    2. Equations used for calculations:
+    <table width="100%" cellpadding="5">
+    <tr>
+        <td width="50%" valign="top">
+            <b>Reynolds Number:</b><br>
+            Re = ρ<sub>∞</sub> · U<sub>∞</sub> · L<sub>ref</sub> / μ<sub>∞</sub><br>
+            <br>
+            <b>Skin Friction Coefficient:</b><br>
+            C<sub>f</sub> = 0.455 / [log<sub>10</sub>(Re)]<sup>2.58</sup><br>
+            <br>
+            <b>Wall Shear Stress:</b><br>
+            τ<sub>w</sub> = 0.5 · C<sub>f</sub> · ρ<sub>∞</sub> · U<sub>∞</sub><sup>2</sup>
+        </td>
+        <td width="50%" valign="top">
+            <b>Friction Velocity:</b><br>
+            U<sub>τ</sub> = √(τ<sub>w</sub> / ρ<sub>∞</sub>)<br>
+            <br>
+            <b>Wall Distance (Δs):</b><br>
+            Δs = Y⁺ · μ<sub>∞</sub> / (U<sub>τ</sub> · ρ<sub>∞</sub>)<br>
+            <br>
+            <b>Variables:</b><br>
+            ρ<sub>∞</sub> = Freestream density<br>
+            U<sub>∞</sub> = Freestream velocity<br>
+            μ<sub>∞</sub> = Dynamic viscosity<br>
+            L<sub>ref</sub> = Reference length
+        </td>
+    </tr>
+    </table>
     )";
 
     ui -> infoBrowser_Yp -> setHtml(footnote);
@@ -179,24 +206,28 @@ STDAtmo::STDAtmo(QWidget *parent)
     <h1>STDAtmo</h1>
 
     <h2>Description</h2>
-    <p>The STDAtmo computes standard atmosphere properties based on the the 1976 model.
-       All typical air properties with ISA deviations can be computed up to an altitude of 86 kilometers.</p>
+    <p>The STDAtmo is a rapid calculator of common properties based on standard atmosphere.</p>
 
     <h2>Capabilities</h2>
-    <p>STDAtmo has two features:
+    <p>STDAtmo has several features:
     <ul>
     <li> Calculations of standard atmosphere properties at a given altitude and temperature deviations in SI and US units.
+         The clculator uses 1976 U.S. Standard Atmosphere model valid for altitudes up to 86 km.
     <li> Plotting of standard atmosphere properties in a user-defined range and prescribed units.
+    <li> Airspeed converter for given airspeed, altitude, and temperature deviation.
+    <li> A Y+ calculator used in CFD calculations.
     </ul>
     </p>
 
     <h2>References</h2>
     <ul>
     <li><a href="https://ntrs.nasa.gov/api/citations/19770009539/downloads/19770009539.pdf">U.S. Standard Atmosphere 1976 (NASA-TM-X-74335)</a> - standard atmosphere methodology</li>
-    </ul>
+    <li><a href=https://doi.org/10.1016/C2011-0-06824-2> S. Gudmundsson "General Aivation AIrcraft Design. Applied Methods and Procedures, 1st edition, Butterworth-Heinemann, 2014.</a> -
+         airspeed calculation equations and the skin friction coefficient used in the Y+ calculator.</li>
+</ul>
 
     <h3>Author</h3>
-    <p><li><a href="https://www.linkedin.com/in/stankarpuk/">Stanislav Karpuk</a></li></p>
+    <li><a href="https://www.linkedin.com/in/stankarpuk/">Stanislav Karpuk</a></li>
     )";
 
     ui -> infoBrowser -> setHtml(content);
@@ -207,12 +238,12 @@ STDAtmo::STDAtmo(QWidget *parent)
     1. Input the altitude and temperature deviations <br>
     2. Select the airspeed to convert from by selecting a radio button <br>
     3. Enter the airspeed of interest and click "Compute" <br><br>
-    * Refer to the documentation for the methodology description
+    * Refer to the Info section for the methodology reference
     )";
     ui -> infoBrowser_SP -> setHtml(instructions);
 
     QString STDAref = R"(
-    1. Refer to the documentation for the methodology description
+    1. Refer to the Info section for the methodology reference
     )";
     ui -> infoBrowser_STD -> setHtml(STDAref);
 
@@ -813,9 +844,12 @@ void STDAtmo::on_Plot_graph_clicked()
 void STDAtmo::on_AltUnits_Yp_2_currentIndexChanged()
 {
     // updates the first mesh layer step size units output
-    if (!computed) return;
+    //if (!computed) return;
 
     int selectedText;
+    //QString ds_text = ui -> dsOutp_Yp -> text();
+
+    //double ds = ds_text.toDouble();
 
     // Altitude output
     selectedText = ui-> AltUnits_Yp_2 -> currentIndex();
@@ -1177,6 +1211,8 @@ void STDAtmo::on_EASCombo_currentIndexChanged(){convert_airspeed(ui-> EASCombo, 
 void STDAtmo::on_CASCombo_currentIndexChanged(){convert_airspeed(ui-> CASCombo, ui-> CASInpOut, VCAS);}
 
 
+
+
 void STDAtmo::on_Export_graph_clicked()
 {
     // export plotted results into a CSV file
@@ -1215,4 +1251,5 @@ void STDAtmo::on_Export_graph_clicked()
     }
 
 }
+
 

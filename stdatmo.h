@@ -90,6 +90,7 @@ private slots:
 
     void checkAirspeed(double airspeed);
 
+
 private:
     Ui::STDAtmo *ui;
 
