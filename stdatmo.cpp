@@ -256,11 +256,8 @@ STDAtmo::STDAtmo(QWidget *parent)
 
     // disable all velocity inputs except for the CAS
     ui->TASInpOut->setReadOnly(true);
-    ui->TASInpOut->setStyleSheet("background-color: #222222;");
     ui->EASInpOut->setReadOnly(true);
-    ui->EASInpOut->setStyleSheet("background-color: #222222;");
     ui->MachInpOut->setReadOnly(true);
-    ui->MachInpOut->setStyleSheet("background-color: #222222;");
 }
 
 STDAtmo::~STDAtmo()
@@ -1156,11 +1153,8 @@ void STDAtmo::on_CASradioButton_clicked()
     ui->CASInpOut->setReadOnly(false);
     ui->CASInpOut->setStyleSheet("");
     ui->TASInpOut->setReadOnly(true);
-    ui->TASInpOut->setStyleSheet("background-color: #222222;");
     ui->EASInpOut->setReadOnly(true);
-    ui->EASInpOut->setStyleSheet("background-color: #222222;");
     ui->MachInpOut->setReadOnly(true);
-    ui->MachInpOut->setStyleSheet("background-color: #222222;");
 }
 
 
@@ -1168,11 +1162,8 @@ void STDAtmo::on_MachradioButton_clicked()
 {
     // adjust lineEdits. Mach
     ui->TASInpOut->setReadOnly(true);
-    ui->TASInpOut->setStyleSheet("background-color: #222222;");
     ui->EASInpOut->setReadOnly(true);
-    ui->EASInpOut->setStyleSheet("background-color: #222222;");
     ui->CASInpOut->setReadOnly(true);
-    ui->CASInpOut->setStyleSheet("background-color: #222222;");
     ui->MachInpOut->setReadOnly(false);
     ui->MachInpOut->setStyleSheet("");
 }
@@ -1182,11 +1173,8 @@ void STDAtmo::on_EASradioButton_clicked()
 {
     // adjust lineEdits. EAS
     ui->TASInpOut->setReadOnly(true);
-    ui->TASInpOut->setStyleSheet("background-color: #222222;");
     ui->MachInpOut->setReadOnly(true);
-    ui->MachInpOut->setStyleSheet("background-color: #222222;");
     ui->CASInpOut->setReadOnly(true);
-    ui->CASInpOut->setStyleSheet("background-color: #222222;");
     ui->EASInpOut->setReadOnly(false);
     ui->EASInpOut->setStyleSheet("");
 }
@@ -1196,11 +1184,8 @@ void STDAtmo::on_TASradioButton_clicked()
 {
     // adjust lineEdits. TAS
     ui->EASInpOut->setReadOnly(true);
-    ui->EASInpOut->setStyleSheet("background-color: #222222;");
     ui->MachInpOut->setReadOnly(true);
-    ui->MachInpOut->setStyleSheet("background-color: #222222;");
     ui->CASInpOut->setReadOnly(true);
-    ui->CASInpOut->setStyleSheet("background-color: #222222;");
     ui->TASInpOut->setReadOnly(false);
     ui->TASInpOut->setStyleSheet("");
 }
